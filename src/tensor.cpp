@@ -164,3 +164,25 @@ Tensor Tensor::funcApply(Tensor tensor, std::function<float(float)> functionAppl
 }
 
 
+Tensor Tensor::colSum(Tensor tensor){
+    int cols = tensor.shape[1];
+    int rows = tensor.shape[0];
+    std::vector<float> result(rows, 0.0f);
+    for(int i = 0; i < rows; i ++){
+        for(int j = 0; j < cols; j++){
+            result[i] += tensor.data[i * cols + j];
+        }
+    }
+    return Tensor(result, {rows, 1});
+}
+
+Tensor Tensor::broadcast(Tensor tensor, int cols) {
+    int rows = tensor.shape[0];
+    std::vector<float> result(rows * cols);
+    for(int i = 0; i < rows; i++){
+        for(int j = 0; j < cols; j++){
+            result[i * cols + j] = tensor.data[i];
+        }
+    }
+    return Tensor(result, {rows, cols});
+}

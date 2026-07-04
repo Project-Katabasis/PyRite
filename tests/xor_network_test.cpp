@@ -21,34 +21,54 @@ int main() {
     network.set_optimizer(new SGD(0.01f));
 
 
-    std::vector<Tensor> inputs = {};
-    inputs.push_back(Tensor({1.0f, 0.0f}, {2, 1}));
-    inputs.push_back(Tensor({0.0f, 1.0f}, {2, 1}));
-    inputs.push_back(Tensor({0.0f, 0.0f}, {2, 1}));
-    inputs.push_back(Tensor({1.0f, 1.0f}, {2, 1}));
+    // std::vector<Tensor> inputs = {};
+    // inputs.push_back(Tensor({1.0f, 0.0f}, {2, 1}));
+    // inputs.push_back(Tensor({0.0f, 1.0f}, {2, 1}));
+    // inputs.push_back(Tensor({0.0f, 0.0f}, {2, 1}));
+    // inputs.push_back(Tensor({1.0f, 1.0f}, {2, 1}));
+    
 
-    std::vector<Tensor> targets = {};
-    targets.push_back(Tensor({1.0f}, {1, 1}));
-    targets.push_back(Tensor({1.0f}, {1, 1}));
-    targets.push_back(Tensor({0.0f}, {1, 1}));
-    targets.push_back(Tensor({0.0f}, {1, 1}));
+    // std::vector<Tensor> targets = {};
+    // targets.push_back(Tensor({1.0f}, {1, 1}));
+    // targets.push_back(Tensor({1.0f}, {1, 1}));
+    // targets.push_back(Tensor({0.0f}, {1, 1}));
+    // targets.push_back(Tensor({0.0f}, {1, 1}));
+
+    // shape {2, 4} — each column is one sample
+    Tensor inputs({1.0f, 0.0f,
+                0.0f, 1.0f,
+                0.0f, 0.0f,
+                1.0f, 1.0f}, {2, 4});
+
+    // shape {1, 4}
+    Tensor targets({1.0f, 1.0f, 0.0f, 0.0f}, {1, 4});
+
+
 
     int Epochs = 10000;
 
+    // for(int i = 0; i < Epochs; i++){
+    //     for(size_t j = 0; j < inputs.size(); j++){
+    //         network.train(inputs[j], targets[j]);
+    //     }
+    // }
+    
+
     for(int i = 0; i < Epochs; i++){
-        for(size_t j = 0; j < inputs.size(); j++){
-            network.train(inputs[j], targets[j]);
-        }
+        network.train(inputs, targets);
     }
+
+    // std::cout << "\n--- Final Predictions ---" << std::endl;
+    // for(size_t j = 0; j < inputs.size(); j++){
+    //     Tensor pred = network.forward(inputs[j]);
+    //     std::cout << "[" << inputs[j].data[0] << ", " << inputs[j].data[1] << "]"
+    //             << " -> " << pred.data[0]
+    //             << " (target: " << targets[j].data[0] << ")" << std::endl;
+    // }
 
     std::cout << "\n--- Final Predictions ---" << std::endl;
-    for(size_t j = 0; j < inputs.size(); j++){
-        Tensor pred = network.forward(inputs[j]);
-        std::cout << "[" << inputs[j].data[0] << ", " << inputs[j].data[1] << "]"
-                << " -> " << pred.data[0]
-                << " (target: " << targets[j].data[0] << ")" << std::endl;
-    }
-
+    Tensor pred = network.forward(inputs);
+    pred.print();
 }
 
 

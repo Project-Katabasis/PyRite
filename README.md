@@ -6,19 +6,31 @@ PyRite is built as a ground-up implementation of a deep learning framework — t
 
 ## Status
 
-**Phase 1 — Core FC Network (in progress)**
+**Phase 1 — Core FC Network ✅ Complete**
 - [x] Tensor (flat 1D storage, full operation set)
 - [x] Dense layer (forward + backward)
 - [x] ReLU activation
 - [x] MSE loss
-- [ ] Network
-- [ ] SGD optimizer
+- [x] Network (forward, backward, train loop)
+- [x] SGD optimizer
+- [x] XOR trained to convergence — end-to-end pipeline verified
 
-**Upcoming**
-- Phase 2: Adam optimizer, batching, MNIST training
-- Phase 3: Conv2D, MaxPool, BatchNorm
-- Phase 4: CUDA GPU acceleration, benchmarks vs PyTorch
-- Phase 5: pybind11 Python bindings, PyPI release
+**Phase 2 — Real Training (up next)**
+- [ ] Batching support
+- [ ] Adam optimizer
+- [ ] MNIST training
+
+**Phase 3 — Convolutional**
+- [ ] Conv2D, MaxPool, BatchNorm
+
+**Phase 4 — GPU Acceleration**
+- [ ] OpenMP CPU parallelism
+- [ ] CUDA kernels
+- [ ] Benchmarks vs PyTorch
+
+**Phase 5 — Python Bindings**
+- [ ] pybind11 bindings
+- [ ] PyPI release
 
 ## Build & Test
 

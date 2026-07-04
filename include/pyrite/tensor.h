@@ -23,7 +23,8 @@ public:
     static Tensor elementMul(Tensor a, Tensor b);
     static Tensor sum(Tensor tensor);
     static Tensor funcApply(Tensor tensor, std::function<float(float)> functionApplied);
-
+    static Tensor colSum(Tensor tensor);
+    static Tensor broadcast(Tensor tensor, int cols);
 
     void print() const;
     int size() const;

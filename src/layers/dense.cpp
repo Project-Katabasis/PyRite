@@ -26,16 +26,17 @@ float Dense::xavierRange(int input_size, int output_size) const {
 }
 
 Tensor Dense::forward(Tensor input){
-    if(input.size() != inputSize){
+    if(input.shape[0] != inputSize){
         throw std::invalid_argument("incorrect Input size in forward");
     }
     input_cache = input;
-    return (Tensor::matAdd((Tensor::matMul(W, input)), b));
+    return Tensor::matAdd(Tensor::matMul(W, input), Tensor::broadcast(b, input.shape[1]));
 }
 
 Tensor Dense::backward(Tensor grad){
-    dW = Tensor::matMul(grad, Tensor::transpose(input_cache));
-    db = grad;
+    int batch_size = (int)input_cache.shape[1];
+    dW = Tensor::scalarMul(Tensor::matMul(grad, Tensor::transpose(input_cache)), 1.0f / batch_size);
+    db = Tensor::scalarMul(Tensor::colSum(grad), 1.0f / batch_size);
     return Tensor::matMul(Tensor::transpose(W), grad);
 }
 
