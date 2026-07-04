@@ -1,7 +1,7 @@
 #pragma once
 #include "pyrite/layers/layer.h"
 #include "pyrite/tensor.h"
-#include <cmath>
+
 
 class Dense : public Layer {
 public:
@@ -11,6 +11,7 @@ public:
 
     Tensor forward(Tensor input) override;
     Tensor backward(Tensor grad) override;
+    std::vector<std::pair<Tensor*, Tensor*>> parameters() override;
 
 private:
     // friend class Optimizer;  // uncomment when optimizer is implemented

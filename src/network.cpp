@@ -3,9 +3,9 @@
 #include "pyrite/layers/layer.h"
 #include "pyrite/loss/loss.h"
 #include "pyrite/network.h"
+#include "pyrite/optimizers/optimizer.h"
 
-
-Network::Network(): loss(nullptr), epochs(0) {}
+Network::Network(): loss(nullptr), epochs(0), optimizer(nullptr) {}
 
 void Network::add(Layer* layer){
     layers.push_back(layer);
@@ -17,6 +17,10 @@ void Network::set_loss(Loss* Loss){
 
 void Network::set_epochs(int Epochs){
     epochs = Epochs;
+}
+
+void Network::set_optimizer(Optimizer* Optimizer){
+    optimizer = Optimizer;
 }
 
 Tensor Network::forward(Tensor input){
@@ -32,4 +36,8 @@ void Network::backward(){
     for(int i = layers.size() -1 ; i >= 0; i--){
         grad = layers[i]->backward(grad);
     }
+}
+
+void Network::step(){
+    optimizer->step(layers);
 }

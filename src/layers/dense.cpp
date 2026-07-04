@@ -38,3 +38,7 @@ Tensor Dense::backward(Tensor grad){
     db = grad;
     return Tensor::matMul(Tensor::transpose(W), grad);
 }
+
+std::vector<std::pair<Tensor*, Tensor*>> Dense::parameters() {
+    return {{&W, &dW}, {&b, &db}};
+}
