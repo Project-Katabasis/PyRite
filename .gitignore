@@ -1,0 +1,8 @@
+*.o
+*.out
+build/
+.env
+tests/tensor_test
+tests/dense_test
+tests/relu_test
+tests/mse_test
