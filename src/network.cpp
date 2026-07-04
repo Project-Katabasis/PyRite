@@ -25,7 +25,7 @@ void Network::set_optimizer(Optimizer* Optimizer){
 
 Tensor Network::forward(Tensor input){
     Tensor next_input = input;
-    for(int i = 0; i < layers.size(); i++){
+    for(int i = 0; i < (int)layers.size(); i++){
         next_input = layers[i]->forward(next_input);
     }
     return next_input;
@@ -33,11 +33,18 @@ Tensor Network::forward(Tensor input){
 
 void Network::backward(){
     Tensor grad = loss->backward();
-    for(int i = layers.size() -1 ; i >= 0; i--){
+    for(int i = (int)layers.size() -1 ; i >= 0; i--){
         grad = layers[i]->backward(grad);
     }
 }
 
 void Network::step(){
     optimizer->step(layers);
+}
+
+void Network::train(Tensor input, Tensor target){
+    Tensor prediction = forward(input);
+    loss->forward(prediction, target);
+    backward();
+    step();
 }

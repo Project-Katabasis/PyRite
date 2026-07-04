@@ -25,6 +25,8 @@ class Network{
 
         void step();
 
+        void train(Tensor input, Tensor target);
+
     private:
         std::vector<Layer*> layers;
         Loss* loss;

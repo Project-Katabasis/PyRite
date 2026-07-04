@@ -17,5 +17,7 @@ relu_test: $(SRC) src/activations/relu.cpp tests/relu_test.cpp
 mse_test: $(SRC) src/loss/mse.cpp tests/mse_test.cpp
 	$(CXX) $(CXXFLAGS) -o tests/mse_test $(SRC) src/loss/mse.cpp tests/mse_test.cpp
 
+xor_test: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/mse.cpp src/optimizers/sgd.cpp src/network.cpp tests/xor_network_test.cpp
+	$(CXX) $(CXXFLAGS) -o tests/xor_test $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/mse.cpp src/optimizers/sgd.cpp src/network.cpp tests/xor_network_test.cpp
 clean:
 	rm -f tests/tensor_test tests/dense_test tests/relu_test tests/mse_test
