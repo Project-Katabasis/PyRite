@@ -5,6 +5,7 @@
 #include "pyrite/layers/layer.h"
 #include "pyrite/optimizers/optimizer.h"
 #include "pyrite/optimizers/sgd.h"
+#include "pyrite/optimizers/sgdMomentum.h"
 #include "pyrite/layers/dense.h"
 #include "pyrite/network.h"
 #include "pyrite/activations/relu.h"
@@ -18,7 +19,10 @@ int main() {
     network.add(new Dense(4, 1));
 
     network.set_loss(new MSE());
-    network.set_optimizer(new SGD(0.01f));
+
+    //network.set_optimizer(new SGD(0.01f));
+
+    network.set_optimizer(new SGDMomentum(0.001f));
 
 
     // std::vector<Tensor> inputs = {};

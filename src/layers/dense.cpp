@@ -34,9 +34,8 @@ Tensor Dense::forward(Tensor input){
 }
 
 Tensor Dense::backward(Tensor grad){
-    int batch_size = (int)input_cache.shape[1];
-    dW = Tensor::scalarMul(Tensor::matMul(grad, Tensor::transpose(input_cache)), 1.0f / batch_size);
-    db = Tensor::scalarMul(Tensor::colSum(grad), 1.0f / batch_size);
+    dW = Tensor::matMul(grad, Tensor::transpose(input_cache));
+    db = Tensor::colSum(grad);
     return Tensor::matMul(Tensor::transpose(W), grad);
 }
 
