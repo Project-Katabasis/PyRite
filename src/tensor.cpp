@@ -145,6 +145,18 @@ Tensor Tensor::elementMul(Tensor a, Tensor b){
     return Tensor(result, a.shape);
 }
 
+Tensor Tensor::elementDiv(Tensor a, Tensor b){
+    if(a.shape != b.shape){
+        throw std::invalid_argument("Shape mismatch in elementDiv: Element division must occur between two matrices of equivalent shape");
+    }
+    std::vector<float> result(a.size(), 0.0f);
+
+    for(int i = 0; i < a.size(); i++){
+        result[i] = a.data[i] / b.data[i];
+    }
+    return Tensor(result, a.shape);
+}
+
 Tensor Tensor::sum(Tensor tensor){
     double result = 0;
 

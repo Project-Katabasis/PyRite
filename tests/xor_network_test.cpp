@@ -6,6 +6,7 @@
 #include "pyrite/optimizers/optimizer.h"
 #include "pyrite/optimizers/sgd.h"
 #include "pyrite/optimizers/sgdMomentum.h"
+#include "pyrite/optimizers/adam.h"
 #include "pyrite/layers/dense.h"
 #include "pyrite/network.h"
 #include "pyrite/activations/relu.h"
@@ -22,8 +23,8 @@ int main() {
 
     //network.set_optimizer(new SGD(0.01f));
 
-    network.set_optimizer(new SGDMomentum(0.001f));
-
+    //network.set_optimizer(new SGDMomentum(0.001f));
+    network.set_optimizer(new Adam());
 
     // std::vector<Tensor> inputs = {};
     // inputs.push_back(Tensor({1.0f, 0.0f}, {2, 1}));
