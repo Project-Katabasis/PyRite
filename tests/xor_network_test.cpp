@@ -10,13 +10,15 @@
 #include "pyrite/layers/dense.h"
 #include "pyrite/network.h"
 #include "pyrite/activations/relu.h"
+#include "pyrite/activations/sigmoid.h"
 #include "pyrite/loss/mse.h"
 
 int main() {
     Network network;
 
     network.add(new Dense(2,4));
-    network.add(new ReLU());
+    network.add(new Sigmoid());
+    //network.add(new ReLU());
     network.add(new Dense(4, 1));
 
     network.set_loss(new MSE());
