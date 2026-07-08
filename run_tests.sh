@@ -8,6 +8,7 @@ if [ -z "$1" ]; then
     make mse_test && ./tests/mse_test
     make xor_test && ./tests/xor_test
     make softmaxCE_test && ./tests/softmaxCE_test
+    make dataloader_test && ./tests/dataloader_test
 else
     echo "Running $1 tests..."
     make $1_test && ./tests/$1_test

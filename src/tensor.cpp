@@ -198,3 +198,16 @@ Tensor Tensor::broadcast(Tensor tensor, int cols) {
     }
     return Tensor(result, {rows, cols});
 }
+
+Tensor Tensor::colSelect(Tensor tensor, std::vector<int> indices){
+    int rows = tensor.shape[0];
+    int n_cols = indices.size();
+    std::vector<float> result(rows * n_cols);
+    for(int j = 0; j < n_cols; j++){
+        int col = indices[j];
+        for(int i = 0; i < rows; i++){
+            result[i * n_cols + j] = tensor.data[i * tensor.shape[1] + col];
+        }
+    }
+    return Tensor(result, {rows, n_cols});
+}

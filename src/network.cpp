@@ -4,8 +4,9 @@
 #include "pyrite/loss/loss.h"
 #include "pyrite/network.h"
 #include "pyrite/optimizers/optimizer.h"
+#include "pyrite/dataLoader.h"
 
-Network::Network(): loss(nullptr), epochs(0), optimizer(nullptr) {}
+Network::Network(): loss(nullptr), epochs(0), optimizer(nullptr), dataLoader(nullptr){}
 
 void Network::add(Layer* layer){
     layers.push_back(layer);
@@ -21,6 +22,10 @@ void Network::set_epochs(int Epochs){
 
 void Network::set_optimizer(Optimizer* Optimizer){
     optimizer = Optimizer;
+}
+
+void Network::set_dataLoader(DataLoader* DataLoader){
+    dataLoader = DataLoader;
 }
 
 Tensor Network::forward(Tensor input){
@@ -47,4 +52,14 @@ void Network::train(Tensor input, Tensor target){
     loss->forward(prediction, target);
     backward();
     step();
+}
+
+void Network::trainEpochs(){
+    for(int i = 0; i < epochs; i++){
+        while(dataLoader->has_next()){
+            auto [input, target] = dataLoader->next();
+            train(input, target);
+        }
+        dataLoader->reset();
+    }
 }

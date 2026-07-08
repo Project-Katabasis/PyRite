@@ -13,7 +13,6 @@ public:
     Tensor backward(Tensor grad) override;
     std::vector<std::pair<Tensor*, Tensor*>> parameters() override;
     
-    static Tensor broadcast(Tensor tensor, int cols);
 private:
     // friend class Optimizer;  // uncomment when optimizer is implemented
     int inputSize;

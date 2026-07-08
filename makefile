@@ -23,5 +23,11 @@ xor_test: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/activations/s
 softmaxCE_test: $(SRC) src/loss/softmaxCrossEntropy.cpp tests/softmaxEntropy_test.cpp
 	$(CXX) $(CXXFLAGS) -o tests/softmaxCE_test $(SRC) src/loss/softmaxCrossEntropy.cpp tests/softmaxEntropy_test.cpp
 
+dataloader_test: $(SRC) src/dataLoader.cpp tests/dataloader_test.cpp
+	$(CXX) $(CXXFLAGS) -o tests/dataloader_test $(SRC) src/dataLoader.cpp tests/dataloader_test.cpp
+
+mnist: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
+	$(CXX) $(CXXFLAGS) -o examples/mnist $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
+
 clean:
 	rm -f tests/tensor_test tests/dense_test tests/relu_test tests/mse_test

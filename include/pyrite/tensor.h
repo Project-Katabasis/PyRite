@@ -27,7 +27,7 @@ public:
     static Tensor funcApply(Tensor tensor, std::function<float(float)> functionApplied);
     static Tensor colSum(Tensor tensor);
     static Tensor broadcast(Tensor tensor, int cols);
-
+    static Tensor colSelect(Tensor tensor, std::vector<int> indices);
     void print() const;
     int size() const;
 };

@@ -6,6 +6,7 @@
 #include "pyrite/layers/layer.h"
 #include "pyrite/loss/loss.h"
 #include "pyrite/optimizers/optimizer.h"
+#include "pyrite/dataLoader.h"
 
 class Network{
     public:
@@ -19,6 +20,8 @@ class Network{
 
         void set_epochs(int Epochs);
 
+        void set_dataLoader(DataLoader* DataLoader);
+
         Tensor forward(Tensor input);
 
         void backward();
@@ -27,9 +30,12 @@ class Network{
 
         void train(Tensor input, Tensor target);
 
+        void trainEpochs();
+
     private:
         std::vector<Layer*> layers;
         Loss* loss;
         int epochs;
         Optimizer* optimizer;
+        DataLoader* dataLoader;
     };

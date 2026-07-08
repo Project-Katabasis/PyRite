@@ -6,3 +6,7 @@ tests/tensor_test
 tests/dense_test
 tests/relu_test
 tests/mse_test
+tests/dataloader_test
+tests/softmaxCE_test
+tests/xor_test
+data/*
