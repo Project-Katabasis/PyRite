@@ -38,10 +38,10 @@ int main() {
 
     // Load data — use max_samples to load a subset for speed
     std::cout << "Loading MNIST..." << std::endl;
-    Tensor train_images = loadMNISTImages("data/train-images-idx3-ubyte", 10000);
-    Tensor train_labels = loadMNISTLabels("data/train-labels-idx1-ubyte", 10000);
-    Tensor test_images  = loadMNISTImages("data/t10k-images-idx3-ubyte",  2000);
-    Tensor test_labels  = loadMNISTLabels("data/t10k-labels-idx1-ubyte",  2000);
+    Tensor train_images = loadMNISTImages("data/train-images-idx3-ubyte", 60000);
+    Tensor train_labels = loadMNISTLabels("data/train-labels-idx1-ubyte", 60000);
+    Tensor test_images  = loadMNISTImages("data/t10k-images-idx3-ubyte",  10000);
+    Tensor test_labels  = loadMNISTLabels("data/t10k-labels-idx1-ubyte",  10000);
     std::cout << "Loaded." << std::endl;
 
     // Build network: 784 -> 128 -> ReLU -> 64 -> ReLU -> 10
@@ -58,7 +58,8 @@ int main() {
     // DataLoader — batch size 32, shuffle on
     DataLoader loader(train_images, train_labels, 32, true);
     net.set_dataLoader(&loader);
-    net.set_epochs(10);
+    net.set_epochs(15);
+    net.set_verbose(true);
 
     // Training loop with accuracy reporting each epoch
     std::cout << "\nTraining..." << std::endl;

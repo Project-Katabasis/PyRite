@@ -21,6 +21,9 @@ class Network{
         void set_epochs(int Epochs);
 
         void set_dataLoader(DataLoader* DataLoader);
+        void set_verbose(bool verbose);
+
+        std::vector<float> getLosses();
 
         Tensor forward(Tensor input);
 
@@ -28,7 +31,7 @@ class Network{
 
         void step();
 
-        void train(Tensor input, Tensor target);
+        Tensor train(Tensor input, Tensor target);
 
         void trainEpochs();
 
@@ -38,4 +41,7 @@ class Network{
         int epochs;
         Optimizer* optimizer;
         DataLoader* dataLoader;
+        std::vector<float> loss_history;
+        std::vector<float> acc_history;
+        bool verbose;
     };
