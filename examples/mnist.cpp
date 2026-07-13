@@ -1,4 +1,4 @@
-#include "pyrite/mnist.h"
+#include "pyrite/examples/mnist.h"
 #include <fstream>
 #include <stdexcept>
 #include <vector>

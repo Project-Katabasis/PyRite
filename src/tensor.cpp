@@ -211,3 +211,80 @@ Tensor Tensor::colSelect(Tensor tensor, std::vector<int> indices){
     }
     return Tensor(result, {rows, n_cols});
 }
+
+static Tensor im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad){
+    int N = input.shape[1];  // not tensor
+    int outH = (in_H + 2*pad - kH) / stride + 1;
+    int outW = (in_W + 2*pad - kW) / stride + 1;
+    int col_len = in_C * kH * kW;
+    int n_cols = outH * outW * N;
+    std::vector<float> result(in_C * in_H * in_W * N, 0.0f);
+    for(int n = 0; n < N; n++){
+        for(int out_row = 0; out_row < outH; out_row++){
+
+            for(int out_col = 0; out_col < outW; out_col++){
+
+                int result_col = n * outH * outW + out_row * outW + out_col;
+
+                for(int out_c = 0; out_c < in_C; out_c++){
+                    
+                    for(int kernel_row = 0; kernel_row < kH; kernel_row++){
+
+                        int ih = out_row * stride - pad + kernel_row;
+
+                        for(int kernel_col = 0; kernel_col < kW; kernel_col++){
+
+                            int iw = out_col * stride - pad + kernel_col;
+
+                            int result_row = out_c * kH * kW + kernel_row * kW + kernel_col;
+
+                            if(ih >= 0 && ih < in_H && iw >= 0 && iw < in_W){
+                                result[result_row * n_cols + result_col] = input.data[(out_c * in_H * in_W + ih * in_W + iw) * N + n];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return Tensor(result, {col_len, n_cols});
+}
+
+
+
+static Tensor col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad, int N){
+    int outH = (in_H + 2*pad - kH) / stride + 1;
+    int outW = (in_W + 2*pad - kW) / stride + 1;
+    int col_len = in_C * kH * kW;
+    int n_cols = outH * outW * N;
+    std::vector<float> result(col_len * n_cols, 0.0f);
+    for(int n = 0; n < N; n++){
+        for(int out_row = 0; out_row < outH; out_row++){
+
+            for(int out_col = 0; out_col < outW; out_col++){
+
+                int result_col = n * outH * outW + out_row * outW + out_col;
+
+                for(int out_c = 0; out_c < in_C; out_c++){
+
+                    for(int kernel_row = 0; kernel_row < kH; kernel_row++){
+
+                        int ih = out_row * stride - pad + kernel_row;
+
+                        for(int kernel_col = 0; kernel_col < kW; kernel_col++){
+
+                            int iw = out_col * stride - pad + kernel_col;
+
+                            int result_row = out_c * kH * kW + kernel_row * kW + kernel_col;
+
+                            if(ih >= 0 && ih < in_H && iw >= 0 && iw < in_W){
+                                result[(out_c * in_H * in_W + ih * in_W + iw) * N + n] += cols.data[result_row * n_cols + result_col];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return Tensor(result, {in_C*in_H*in_W, N});
+}

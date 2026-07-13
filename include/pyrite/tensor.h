@@ -28,6 +28,13 @@ public:
     static Tensor colSum(Tensor tensor);
     static Tensor broadcast(Tensor tensor, int cols);
     static Tensor colSelect(Tensor tensor, std::vector<int> indices);
+    
+    //convolutional functions
+    static Tensor im2col(Tensor input, int in_C, int in_H, int in_W,
+                        int kH, int kW, int stride, int pad);
+
+    static Tensor col2im(Tensor cols, int in_C, int in_H, int in_W,
+                        int kH, int kW, int stride, int pad, int N);
     void print() const;
     int size() const;
 };

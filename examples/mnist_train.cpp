@@ -6,7 +6,7 @@
 #include "pyrite/optimizers/adam.h"
 #include "pyrite/network.h"
 #include "pyrite/dataLoader.h"
-#include "pyrite/mnist.h"
+#include "pyrite/examples/mnist.h"
 
 float evaluate(Network& net, Tensor& images, Tensor& labels, int n_samples) {
     int correct = 0;
