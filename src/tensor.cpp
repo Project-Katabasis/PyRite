@@ -212,13 +212,13 @@ Tensor Tensor::colSelect(Tensor tensor, std::vector<int> indices){
     return Tensor(result, {rows, n_cols});
 }
 
-static Tensor im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad){
+Tensor Tensor::im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad){
     int N = input.shape[1];  // not tensor
     int outH = (in_H + 2*pad - kH) / stride + 1;
     int outW = (in_W + 2*pad - kW) / stride + 1;
     int col_len = in_C * kH * kW;
     int n_cols = outH * outW * N;
-    std::vector<float> result(in_C * in_H * in_W * N, 0.0f);
+    std::vector<float> result(col_len * n_cols, 0.0f);
     for(int n = 0; n < N; n++){
         for(int out_row = 0; out_row < outH; out_row++){
 
@@ -252,12 +252,12 @@ static Tensor im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW,
 
 
 
-static Tensor col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad, int N){
+Tensor Tensor::col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad, int N){
     int outH = (in_H + 2*pad - kH) / stride + 1;
     int outW = (in_W + 2*pad - kW) / stride + 1;
-    int col_len = in_C * kH * kW;
+    //int col_len = in_C * kH * kW;
     int n_cols = outH * outW * N;
-    std::vector<float> result(col_len * n_cols, 0.0f);
+    std::vector<float> result(in_C * in_H * in_W * N, 0.0f);
     for(int n = 0; n < N; n++){
         for(int out_row = 0; out_row < outH; out_row++){
 

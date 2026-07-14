@@ -11,6 +11,7 @@ public:
 
     Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad = false);
     Tensor(std::vector<float> data);  // infers 1D shape
+    Tensor() : data({}), shape({0}), requires_grad(false) {}
 
     static Tensor random(std::vector<int> shape, float min = 0.0f, float max = 1.0f);
     static Tensor zeros(std::vector<int> shape);

@@ -29,5 +29,7 @@ dataloader_test: $(SRC) src/dataLoader.cpp tests/dataloader_test.cpp
 mnist: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 	$(CXX) $(CXXFLAGS) -o examples/mnist $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 
+mnist_cnn: examples/mnist_cnn.cpp src/tensor.cpp src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
+	$(CXX) $(CXXFLAGS) -o mnist_cnn examples/mnist_cnn.cpp src/tensor.cpp src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp -I include
 clean:
 	rm -f tests/tensor_test tests/dense_test tests/relu_test tests/mse_test

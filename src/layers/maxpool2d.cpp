@@ -1,4 +1,3 @@
-#pragma once
 #include "pyrite/tensor.h"
 #include <vector>
 #include "pyrite/layers/maxpool2d.h"
@@ -7,7 +6,8 @@
 MaxPool2D::MaxPool2D(int in_C, int in_H, int in_W, int kH, int kW): in_C(in_C), in_H(in_H), in_W(in_W), kH(kH), kW(kW) {};
 
 Tensor MaxPool2D::forward(Tensor input){
-    int N = input.shape[1] / (in_H * in_W);
+    //std::cout << "MaxPool input shape: " << input.shape[0] << " " << input.shape[1] << std::endl;
+    int N = input.shape[1]; 
     int poolH = in_H / kH;
     int poolW = in_W / kW;
     std::vector<float> result(in_C * poolH * poolW * N, 0.0f);
@@ -42,8 +42,6 @@ Tensor MaxPool2D::forward(Tensor input){
 
 Tensor MaxPool2D::backward(Tensor grad){
     int N = grad.shape[1];
-    int poolH = in_H / kH;
-    int poolW = in_W / kW;
     Tensor grad_input = Tensor::zeros({in_C * in_H * in_W, N});
     for(int i = 0; i < (int)argmax_cache.size(); i++){
         grad_input.data[argmax_cache[i]] += grad.data[i];

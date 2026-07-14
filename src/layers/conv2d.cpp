@@ -13,16 +13,44 @@ float Conv2D::xavierRange(int input_size, int output_size) const {
 }
 
 Tensor Conv2D::forward(Tensor input){
+    //std::cout << "Conv2D input shape: " << input.shape[0] << " " << input.shape[1] << std::endl;
     im2col_cache = Tensor::im2col(input, in_C, in_H, in_W, kH, kW, stride, pad);
-    return Tensor::matAdd(Tensor::matMul(W, im2col_cache), Tensor::broadcast(b, im2col_cache.shape[1]));
+    Tensor matmul_out = Tensor::matAdd(Tensor::matMul(W, im2col_cache), Tensor::broadcast(b, im2col_cache.shape[1]));
+    int outH = (in_H + 2*pad - kH) / stride + 1;
+    int outW = (in_W + 2*pad - kW) / stride + 1;
+    int N = input.shape[1];
+    std::vector<float> reordered(out_C * outH * outW * N);
+    for(int c = 0; c < out_C; c++)
+        for(int n = 0; n < N; n++)
+            for(int ph = 0; ph < outH; ph++)
+                for(int pw = 0; pw < outW; pw++){
+                    int src = c * (outH*outW*N) + n * outH*outW + ph * outW + pw;
+                    int dst = (c * outH*outW + ph*outW + pw) * N + n;
+                    reordered[dst] = matmul_out.data[src];
+                }
+    return Tensor(reordered, {out_C * outH * outW, N});
 }
 
 Tensor Conv2D::backward(Tensor grad){
-    dW = Tensor::matMul(grad, Tensor::transpose(im2col_cache));
-    db = Tensor::colSum(grad);
-    Tensor d_cols = Tensor::matMul(Tensor::transpose(W), grad);
     int outH = (in_H + 2*pad - kH) / stride + 1;
     int outW = (in_W + 2*pad - kW) / stride + 1;
+    int N = grad.shape[1];
+
+    // reverse reorder: {out_C*outH*outW, N} → {out_C, outH*outW*N}
+    std::vector<float> reordered(out_C * outH * outW * N);
+    for(int c = 0; c < out_C; c++)
+        for(int n = 0; n < N; n++)
+            for(int ph = 0; ph < outH; ph++)
+                for(int pw = 0; pw < outW; pw++){
+                    int src = (c * outH*outW + ph*outW + pw) * N + n;
+                    int dst = c * (outH*outW*N) + n*outH*outW + ph*outW + pw;
+                    reordered[dst] = grad.data[src];
+                }
+    Tensor grad_reordered(reordered, {out_C, outH*outW*N});
+
+    dW = Tensor::matMul(grad_reordered, Tensor::transpose(im2col_cache));
+    db = Tensor::colSum(grad_reordered);
+    Tensor d_cols = Tensor::matMul(Tensor::transpose(W), grad_reordered);
     return Tensor::col2im(d_cols, in_C, in_H, in_W, kH, kW, stride, pad, im2col_cache.shape[1] / (outH * outW));
 }
 
