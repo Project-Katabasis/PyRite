@@ -1,8 +1,11 @@
 #include "pyrite/tensor.h"
+#include "pyrite/cuda/kernels.cuh"
 #include <random>
 #include <numeric>
 #include <functional>
 #include <stdexcept>
+#include <stdio.h>
+#include <cuda_runtime.h>
 
 Tensor::Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad)
     : data(data), shape(shape), requires_grad(requires_grad) {}
@@ -54,11 +57,32 @@ Tensor Tensor::matAdd(Tensor a, Tensor b) {
     if (a.shape != b.shape) {
         throw std::invalid_argument("Shape mismatch in matAdd: incompatible dimensions");
     }
+    int size = a.data.size();
+    std::vector<float> result(size);
 
-    std::vector<float> result(a.data.size());
-    for (int i = 0; i < (int)a.data.size(); i++) {
-        result[i] = a.data[i] + b.data[i];
-    }
+    #ifdef USE_CUDA
+        
+        size_t bytes = size * sizeof(float);
+
+        float *dev_A, *dev_B, *dev_C;
+        cudaMalloc(&dev_A, bytes);
+        cudaMalloc(&dev_B, bytes);
+        cudaMalloc(&dev_C, bytes);
+
+        cudaMemcpy(dev_A, a.data.data(), bytes, cudaMemcpyHostToDevice);
+        cudaMemcpy(dev_B, b.data.data(), bytes, cudaMemcpyHostToDevice);
+        
+
+        int threadsPerBlock = 256, blocksPerGrid = (size + 255)/256; 
+        elementwiseAdd<<<blocksPerGrid, threadsPerBlock>>>(dev_C, dev_A, dev_B, size); 
+        cudaMemcpy(result.data(), dev_C, bytes, cudaMemcpyDeviceToHost);
+        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
+
+    #else
+        for (int i = 0; i < size; i++) {
+            result[i] = a.data[i] + b.data[i];
+        }
+    #endif
     return Tensor(result, a.shape);
 }
 
@@ -86,16 +110,42 @@ Tensor Tensor::matMul(Tensor a, Tensor b) {
     int inner = a.shape[1];  // must equal b.shape[0]
     int cols = b.shape[1];
 
-    std::vector<float> result(rows * cols, 0.0f);  // flat, initialized to 0
+    #ifdef CUDA_NAIVE
+        size_t bytes_A = rows * inner * sizeof(float);
+        size_t bytes_B = inner * cols * sizeof(float);
+        size_t bytes_C = rows * cols * sizeof(float);
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            for (int k = 0; k < inner; k++) {
-                result[i * cols + j] += a.data[i * inner + k] * b.data[k * cols + j];
+        float *dev_A, *dev_B, *dev_C;
+        cudaMalloc(&dev_A, bytes_A);
+        cudaMalloc(&dev_B, bytes_B);
+        cudaMalloc(&dev_C, bytes_C);
+
+        cudaMemcpy(dev_A, a.data.data(), bytes_A, cudaMemcpyHostToDevice);
+        cudaMemcpy(dev_B, b.data.data(), bytes_B, cudaMemcpyHostToDevice);
+
+        dim3 threads(16, 16);
+        dim3 blocks((cols + 15) / 16, (rows + 15) / 16);
+        naiveMatMul<<<blocks, threads>>>(dev_C, dev_A, dev_B, rows, cols, inner);
+
+        std::vector<float> result(rows * cols);
+        cudaMemcpy(result.data(), dev_C, bytes_C, cudaMemcpyDeviceToHost);
+
+        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
+        return Tensor(result, {rows, cols});
+
+    #else
+
+        std::vector<float> result(rows * cols, 0.0f);  // flat, initialized to 0
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                for (int k = 0; k < inner; k++) {
+                    result[i * cols + j] += a.data[i * inner + k] * b.data[k * cols + j];
+                }
             }
         }
-    }
-    return Tensor(result, {rows, cols});
+        return Tensor(result, {rows, cols});
+    #endif
 }
 
 Tensor Tensor::transpose(Tensor tensor){

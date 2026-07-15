@@ -73,6 +73,8 @@ int main() {
     net.set_dataLoader(&loader);
     net.set_epochs(10);
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     std::cout << "\nTraining..." << std::endl;
     for (int epoch = 0; epoch < 10; epoch++) {
         while (loader.has_next()) {
@@ -84,7 +86,10 @@ int main() {
         float acc = evaluate(net, test_images, test_labels, 2000);
         std::cout << "Epoch " << epoch + 1 << "/10  test accuracy: " << acc << "%" << std::endl;
     }
-
+    auto end = std::chrono::high_resolution_clock::now();
+    float seconds = std::chrono::duration<float>(end - start).count();
+    std::cout << "Total training time: " << seconds << "s" << std::endl;
+    
     std::cout << "\nDone." << std::endl;
     return 0;
 }

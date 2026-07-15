@@ -15,13 +15,13 @@ PyRite is built as a ground-up implementation of a deep learning framework — t
 - [x] SGD optimizer
 - [x] XOR trained to convergence — end-to-end pipeline verified
 
-**Phase 2 — Real Training**
+**Phase 2 — Real Training ✅ Complete**
 - [x] Batching support
 - [x] Adam optimizer
 - [x] MNIST training
 
 **Phase 3 — Convolutional (up next)**
-- [ ] Conv2D, MaxPool, BatchNorm
+- [x] Conv2D, MaxPool, BatchNorm
 
 **Phase 4 — GPU Acceleration**
 - [ ] OpenMP CPU parallelism

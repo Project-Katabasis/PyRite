@@ -9,4 +9,11 @@ tests/mse_test
 tests/dataloader_test
 tests/softmaxCE_test
 tests/xor_test
+
+mnist_cnn
+mnist_cnn_naive
+vector_add
+matmulN
+examples/mnist
+
 data/*

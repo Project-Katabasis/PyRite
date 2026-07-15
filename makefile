@@ -1,10 +1,9 @@
-CXX = g++
-CXXFLAGS = -std=c++17 -Wall -O3 -Iinclude
+CXX = nvcc
+CXXFLAGS = -std=c++17 -O3 -Iinclude
+CUDA_SRCS = src/cuda/matmul.cu src/cuda/elementwise.cu
 
-# Source files
-SRC = src/tensor.cpp
+SRC = src/tensor.cu
 
-# Test targets
 tensor_test: $(SRC) tests/tensor_test.cpp
 	$(CXX) $(CXXFLAGS) -o tests/tensor_test $(SRC) tests/tensor_test.cpp
 
@@ -29,7 +28,11 @@ dataloader_test: $(SRC) src/dataLoader.cpp tests/dataloader_test.cpp
 mnist: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 	$(CXX) $(CXXFLAGS) -o examples/mnist $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 
-mnist_cnn: examples/mnist_cnn.cpp src/tensor.cpp src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
-	$(CXX) $(CXXFLAGS) -o mnist_cnn examples/mnist_cnn.cpp src/tensor.cpp src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp -I include
+mnist_cnn: examples/mnist_cnn.cpp $(SRC) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
+	$(CXX) $(CXXFLAGS) -o mnist_cnn examples/mnist_cnn.cpp $(SRC) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
+
+mnist_cnn_naive: examples/mnist_cnn.cpp $(SRC) $(CUDA_SRCS) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
+	$(CXX) $(CXXFLAGS) -DCUDA_NAIVE -DUSE_CUDA -o mnist_cnn_naive examples/mnist_cnn.cpp $(SRC) $(CUDA_SRCS) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
+
 clean:
-	rm -f tests/tensor_test tests/dense_test tests/relu_test tests/mse_test
+	rm -f tests/tensor_test tests/dense_test tests/relu_test tests/mse_test mnist_cnn mnist_cnn_naive
