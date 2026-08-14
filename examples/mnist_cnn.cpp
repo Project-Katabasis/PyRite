@@ -10,7 +10,7 @@
 #include "pyrite/network.h"
 #include "pyrite/dataLoader.h"
 #include "pyrite/examples/mnist.h"
-
+#include <chrono>
 // make mnist_cnn
 //./mnist_cnn
 // 
@@ -89,7 +89,7 @@ int main() {
     auto end = std::chrono::high_resolution_clock::now();
     float seconds = std::chrono::duration<float>(end - start).count();
     std::cout << "Total training time: " << seconds << "s" << std::endl;
-    
+
     std::cout << "\nDone." << std::endl;
     return 0;
 }
