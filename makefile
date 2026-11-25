@@ -25,6 +25,9 @@ softmaxCE_test: $(SRC) src/loss/softmaxCrossEntropy.cpp tests/softmaxEntropy_tes
 dataloader_test: $(SRC) src/dataLoader.cpp tests/dataloader_test.cpp
 	$(CXX) $(CXXFLAGS) -o tests/dataloader_test $(SRC) src/dataLoader.cpp tests/dataloader_test.cpp
 
+kernel_test: tests/kernel_test.cu src/tensor.cu src/cuda/elementwise.cu src/cuda/matmul.cu src/cuda/conv_ops.cu
+	$(CXX) $(CXXFLAGS) -DUSE_CUDA -o tests/kernel_test tests/kernel_test.cu src/tensor.cu src/cuda/elementwise.cu src/cuda/matmul.cu src/cuda/conv_ops.cu
+
 mnist: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 	$(CXX) $(CXXFLAGS) -o examples/mnist $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 

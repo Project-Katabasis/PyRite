@@ -134,7 +134,7 @@ Tensor Tensor::matMul(Tensor a, Tensor b) {
         return Tensor(result, {rows, cols});
     
     #elif defined(CUDA_TILED)
-        printf("CUDA matmul: %dx%d @ %dx%d\n", rows, inner, inner, cols);
+        // printf("CUDA matmul: %dx%d @ %dx%d\n", rows, inner, inner, cols);
         fflush(stdout);
         #pragma message("Compiling with CUDA_TILED")
         size_t bytes_A = rows * inner * sizeof(float);
