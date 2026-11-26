@@ -33,13 +33,8 @@ float evaluate(Network& net, Tensor& images, Tensor& labels, int n_samples) {
         Tensor label  = Tensor::colSelect(labels, idx);
         Tensor output = net.forward(input);
 
-        int pred = 0;
-        for (int j = 1; j < 10; j++)
-            if (output.data[j] > output.data[pred]) pred = j;
-
-        int truth = 0;
-        for (int j = 1; j < 10; j++)
-            if (label.data[j] > label.data[truth]) truth = j;
+        int pred = output.argmax();
+        int truth = label.argmax();
 
         if (pred == truth) correct++;
     }

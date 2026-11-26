@@ -8,6 +8,8 @@
 #include <cuda_runtime.h>
 #include "pyrite/memory/allocators/cpuAllocator.h"
 #include <cstring>
+#include "pyrite/ops/ops.h"
+#include "pyrite/ops/cpuOps.h"          // funcApply only — not in ops:: dispatch
 
 static CPUAllocator _cpu_alloc;
 Allocator* Tensor::default_alloc_ = &_cpu_alloc;
@@ -75,14 +77,8 @@ Tensor Tensor::matAdd(Tensor a, Tensor b) {
     if (a.shape != b.shape) {
         throw std::invalid_argument("Shape mismatch in matAdd: incompatible dimensions");
     }
-
     Tensor result = Tensor::zeros(a.shape); // construct empty result Tensor
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* a_ptr = static_cast<float*>(a.storage_->data());
-    float* b_ptr = static_cast<float*>(b.storage_->data());
-    for (int i = 0; i < a.size(); i++) {
-        result_ptr[i] = a_ptr[i] + b_ptr[i];
-    }
+    ops::matAdd(result.data_ptr(), a.data_ptr(), b.data_ptr(), a.size(), a.storage_->device());
 
     return result;
 }
@@ -92,16 +88,10 @@ Tensor Tensor::matSub(Tensor a, Tensor b) {
         throw std::invalid_argument("Shape mismatch in matSub: incompatible dimensions");
     }
 
-    //std::vector<float> result(a.data.size());
     Tensor result = Tensor::zeros(a.shape);   // construct empty result Tensor
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* a_ptr = static_cast<float*>(a.storage_->data());
-    float* b_ptr = static_cast<float*>(b.storage_->data());
-    for (int i = 0; i < (int)a.size(); i++) {
-        // result[i] = a.data[i] - b.data[i];
-        result_ptr[i] = a_ptr[i] - b_ptr[i];
-    }
+    ops::matSub(result.data_ptr(), a.data_ptr(), b.data_ptr(), a.size(), a.storage_->device());
+    
     return result;
 }
 
@@ -119,17 +109,8 @@ Tensor Tensor::matMul(Tensor a, Tensor b) {
 
     Tensor result = Tensor::zeros({rows, cols});
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* a_ptr = static_cast<float*>(a.storage_->data());
-    float* b_ptr = static_cast<float*>(b.storage_->data());
+    ops::matMul(result.data_ptr(), a.data_ptr(), b.data_ptr(), rows, cols, inner, a.storage_->device());
 
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            for (int k = 0; k < inner; k++) {
-                result_ptr[i * cols + j] += a_ptr[i * inner + k] * b_ptr[k * cols + j];
-            }
-        }
-    }
     return result;
 }
 
@@ -139,14 +120,7 @@ Tensor Tensor::transpose(Tensor tensor){
 
     Tensor result = Tensor::zeros({tensor.shape[1], tensor.shape[0]});
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
-
-    for(int i = 0; i < tensor.shape[0]; i ++){
-        for(int j = 0; j < tensor.shape[1]; j ++){
-            result_ptr[j * tensor.shape[0]+ i] = tensor_ptr[j + tensor.shape[1] * i];
-        }
-    }
+    ops::transpose(result.data_ptr(), tensor.data_ptr(), tensor.shape[0], tensor.shape[1], tensor.storage_->device());
 
     return result;
 }
@@ -154,12 +128,9 @@ Tensor Tensor::transpose(Tensor tensor){
 Tensor Tensor::scalarMul(Tensor tensor, float num){
 
     Tensor result = Tensor::zeros(tensor.shape);
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
 
-    for (int i = 0; i < tensor.size(); i++) {
-        result_ptr[i] = num * tensor_ptr[i];
-    }
+    ops::scalarMul(result.data_ptr(), tensor.data_ptr(), num, tensor.size(), tensor.storage_->device());
+
     return result;
 }
 
@@ -167,12 +138,8 @@ Tensor Tensor::scalarMul(Tensor tensor, float num){
 Tensor Tensor::scalarAdd(Tensor tensor, float num){
 
     Tensor result = Tensor::zeros(tensor.shape);
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
 
-    for(int i = 0; i < tensor.size(); i++){
-        result_ptr[i] = num + tensor_ptr[i];
-    }
+    ops::scalarAdd(result.data_ptr(), tensor.data_ptr(), num, tensor.size(), tensor.storage_->device());
 
     return result;
 }
@@ -184,14 +151,8 @@ Tensor Tensor::elementMul(Tensor a, Tensor b){
     
     Tensor result = Tensor::zeros(a.shape);
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* a_ptr = static_cast<float*>(a.storage_->data());
-    float* b_ptr = static_cast<float*>(b.storage_->data());
+    ops::elementMul(result.data_ptr(), a.data_ptr(), b.data_ptr(), a.size(), a.storage_->device());
 
-
-    for(int i = 0; i < a.size(); i++){
-        result_ptr[i] = a_ptr[i] * b_ptr[i];
-    }
     return result;
 }
 
@@ -201,69 +162,36 @@ Tensor Tensor::elementDiv(Tensor a, Tensor b){
     }
     Tensor result = Tensor::zeros(a.shape);
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* a_ptr = static_cast<float*>(a.storage_->data());
-    float* b_ptr = static_cast<float*>(b.storage_->data());
+    ops::elementDiv(result.data_ptr(), a.data_ptr(), b.data_ptr(), a.size(), a.storage_->device());
 
-    for(int i = 0; i < a.size(); i++){
-        result_ptr[i] = a_ptr[i] / b_ptr[i];
-    }
     return result;
 }
 
 Tensor Tensor::sum(Tensor tensor){
-    double result = 0;
-
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
-
-    for(int i = 0; i < tensor.size(); i++){
-        result += tensor_ptr[i];
-    }
-    return Tensor({(float)result}, {1});
+    float s = ops::sum(tensor.data_ptr(), tensor.size(), tensor.storage_->device());
+    return Tensor({s}, {1});
 }
 
 Tensor Tensor::funcApply(Tensor tensor, std::function<float(float)> functionApplied){
     Tensor result = Tensor::zeros(tensor.shape);
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
-    
-    for(int i = 0; i < tensor.size(); i++){
-        result_ptr[i] = functionApplied(tensor_ptr[i]);
-    }
+    cpu_ops::funcApply(result.data_ptr(), tensor.data_ptr(), tensor.size(), functionApplied);
     return result;
 }
 
 
 Tensor Tensor::colSum(Tensor tensor){
-    int cols = tensor.shape[1];
-    int rows = tensor.shape[0];
+    Tensor result = Tensor::zeros({tensor.shape[0], 1});
 
-    Tensor result = Tensor::zeros({rows, 1});
+    ops::colSum(result.data_ptr(), tensor.data_ptr(), tensor.shape[0], tensor.shape[1], tensor.storage_->device());
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
-    
-    for(int i = 0; i < rows; i ++){
-        for(int j = 0; j < cols; j++){
-            result_ptr[i] += tensor_ptr[i * cols + j];
-        }
-    }
     return result;
 }
 
 Tensor Tensor::broadcast(Tensor tensor, int cols) {
-    int rows = tensor.shape[0];
+    Tensor result = Tensor::zeros({tensor.shape[0], cols});
 
-    Tensor result = Tensor::zeros({rows, cols});
-
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
-
-    for(int i = 0; i < rows; i++){
-        for(int j = 0; j < cols; j++){
-            result_ptr[i * cols + j] = tensor_ptr[i];
-        }
-    }
+    ops::broadcast(result.data_ptr(), tensor.data_ptr(), tensor.shape[0], cols, tensor.storage_->device());
+    
     return result;
 }
 
@@ -273,15 +201,7 @@ Tensor Tensor::colSelect(Tensor tensor, std::vector<int> indices){
 
     Tensor result = Tensor::zeros({rows, n_cols});
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
-
-    for(int j = 0; j < n_cols; j++){
-        int col = indices[j];
-        for(int i = 0; i < rows; i++){
-            result_ptr[i * n_cols + j] = tensor_ptr[i * tensor.shape[1] + col];
-        }
-    }
+    ops::colSelect(result.data_ptr(), tensor.data_ptr(), rows, tensor.shape[1], indices.data(), n_cols, tensor.storage_->device());
     return result;
 }
 
@@ -293,38 +213,9 @@ Tensor Tensor::im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW
     int n_cols = outH * outW * N;
     
     Tensor result = Tensor::zeros({col_len, n_cols});
+    
+    ops::im2col(result.data_ptr(), input.data_ptr(), in_C, in_H, in_W, kH, kW, stride, pad, outH, outW, N, n_cols, input.storage_->device());
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* input_ptr = static_cast<float*>(input.storage_->data());
-
-    for(int n = 0; n < N; n++){
-        for(int out_row = 0; out_row < outH; out_row++){
-
-            for(int out_col = 0; out_col < outW; out_col++){
-
-                int result_col = n * outH * outW + out_row * outW + out_col;
-
-                for(int out_c = 0; out_c < in_C; out_c++){
-                    
-                    for(int kernel_row = 0; kernel_row < kH; kernel_row++){
-
-                        int ih = out_row * stride - pad + kernel_row;
-
-                        for(int kernel_col = 0; kernel_col < kW; kernel_col++){
-
-                            int iw = out_col * stride - pad + kernel_col;
-
-                            int result_row = out_c * kH * kW + kernel_row * kW + kernel_col;
-
-                            if(ih >= 0 && ih < in_H && iw >= 0 && iw < in_W){
-                                result_ptr[result_row * n_cols + result_col] = input_ptr[(out_c * in_H * in_W + ih * in_W + iw) * N + n];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
     return result;
 }
 
@@ -337,38 +228,35 @@ Tensor Tensor::col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW,
     int n_cols = outH * outW * N;
 
     Tensor result = Tensor::zeros({in_C*in_H*in_W, N});
+    
+    ops::col2im(result.data_ptr(), cols.data_ptr(), in_C, in_H, in_W, kH, kW, stride, pad, outH, outW, N, n_cols, cols.storage_->device());
+    
+    return result;
+}
 
-    float* result_ptr = static_cast<float*>(result.storage_->data());
-    float* cols_ptr = static_cast<float*>(cols.storage_->data());
+
+float Tensor::at(int i) const {
+    return data_ptr()[i];
+}
 
 
-    for(int n = 0; n < N; n++){
-        for(int out_row = 0; out_row < outH; out_row++){
+// scatter Add
+void Tensor::scatterAdd(Tensor& target, const std::vector<int>& indices, const Tensor& source) {
+    ops::scatterAdd(target.data_ptr(), indices.data(), source.data_ptr(), indices.size(), target.storage_->device());
+}
 
-            for(int out_col = 0; out_col < outW; out_col++){
+int Tensor::argmax() const {
+    return ops::argmax(data_ptr(), size(), storage_->device());
+}
 
-                int result_col = n * outH * outW + out_row * outW + out_col;
+Tensor Tensor::reorder(const Tensor& input, const std::vector<int>& dst_to_src, std::vector<int> shape) {
+    Tensor result = Tensor::zeros(shape);
+    ops::reorder(result.data_ptr(), input.data_ptr(), dst_to_src.data(), dst_to_src.size(), input.storage_->device());
+    return result;
+}
 
-                for(int out_c = 0; out_c < in_C; out_c++){
-
-                    for(int kernel_row = 0; kernel_row < kH; kernel_row++){
-
-                        int ih = out_row * stride - pad + kernel_row;
-
-                        for(int kernel_col = 0; kernel_col < kW; kernel_col++){
-
-                            int iw = out_col * stride - pad + kernel_col;
-
-                            int result_row = out_c * kH * kW + kernel_row * kW + kernel_col;
-
-                            if(ih >= 0 && ih < in_H && iw >= 0 && iw < in_W){
-                                result_ptr[(out_c * in_H * in_W + ih * in_W + iw) * N + n] += cols_ptr[result_row * n_cols + result_col];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+Tensor Tensor::softmax(const Tensor& input) {
+    Tensor result = Tensor::zeros(input.shape);
+    ops::softmax(result.data_ptr(), input.data_ptr(), input.shape[0], input.shape[1], input.storage_->device());
     return result;
 }

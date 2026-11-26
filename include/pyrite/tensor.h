@@ -12,6 +12,7 @@ public:
     std::vector<int> shape;
     bool requires_grad;
     float* data_ptr() { return static_cast<float*>(storage_->data()); }
+    const float* data_ptr() const { return static_cast<const float*>(storage_->data()); }
 
     Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad = false);
     Tensor(std::vector<float> data);  // infers 1D shape
@@ -40,6 +41,21 @@ public:
 
     static Tensor col2im(Tensor cols, int in_C, int in_H, int in_W,
                         int kH, int kW, int stride, int pad, int N);
+
+    // element access
+    float at(int i) const;
+    int argmax() const;
+
+    // scatter
+    static void scatterAdd(Tensor& target, const std::vector<int>& indices, const Tensor& source);
+
+    // reorder (conv2d index shuffle)
+    static Tensor reorder(const Tensor& input, const std::vector<int>& dst_to_src, std::vector<int> shape);
+
+    // softmax (column-wise)
+    static Tensor softmax(const Tensor& input);
+        
+
     void print() const;
     int size() const;
 

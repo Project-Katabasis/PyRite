@@ -69,7 +69,7 @@ void Network::trainEpochs(){
         int batches = 0;
         while(dataLoader->has_next()){
             auto [input, target] = dataLoader->next();
-            epoch_loss += train(input, target).data[0];
+            epoch_loss += train(input, target).at(0);
             batches++;
         }
         loss_history.push_back(epoch_loss / batches);

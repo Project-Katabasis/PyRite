@@ -22,7 +22,7 @@ Tensor MaxPool2D::forward(Tensor input){
                     for(int curKH = 0; curKH < kH; curKH++){
                         for(int curKW = 0; curKW < kW; curKW++){
                             int input_idx = (c * in_H * in_W + (poolHCurr * kH + curKH) * in_W + (poolWCurr * kW + curKW)) * N + batch;
-                            float curr = input.data[input_idx];
+                            float curr = input.at(input_idx);
                             if(curr > max_val){
                                 max_val = curr;
                                 max_idx = input_idx;
@@ -43,9 +43,7 @@ Tensor MaxPool2D::forward(Tensor input){
 Tensor MaxPool2D::backward(Tensor grad){
     int N = grad.shape[1];
     Tensor grad_input = Tensor::zeros({in_C * in_H * in_W, N});
-    for(int i = 0; i < (int)argmax_cache.size(); i++){
-        grad_input.data[argmax_cache[i]] += grad.data[i];
-    }
+    Tensor::scatterAdd(grad_input, argmax_cache, grad);
     return grad_input;
 }
 

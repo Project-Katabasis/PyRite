@@ -26,7 +26,7 @@ Tensor Conv2D::forward(Tensor input){
                 for(int pw = 0; pw < outW; pw++){
                     int src = c * (outH*outW*N) + n * outH*outW + ph * outW + pw;
                     int dst = (c * outH*outW + ph*outW + pw) * N + n;
-                    reordered[dst] = matmul_out.data[src];
+                    reordered[dst] = matmul_out.at(src);
                 }
     return Tensor(reordered, {out_C * outH * outW, N});
 }
@@ -44,7 +44,7 @@ Tensor Conv2D::backward(Tensor grad){
                 for(int pw = 0; pw < outW; pw++){
                     int src = (c * outH*outW + ph*outW + pw) * N + n;
                     int dst = c * (outH*outW*N) + n*outH*outW + ph*outW + pw;
-                    reordered[dst] = grad.data[src];
+                    reordered[dst] = grad.at(src);
                 }
     Tensor grad_reordered(reordered, {out_C, outH*outW*N});
 

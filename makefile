@@ -4,8 +4,8 @@ CUDA_SRCS = src/cuda/matmul.cu src/cuda/elementwise.cu
 
 SRC = src/tensor.cu
 
-tensor_test: $(SRC) tests/tensor_test.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp
-	$(CXX) $(CXXFLAGS) -o tests/tensor_test $(SRC) tests/tensor_test.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp
+tensor_test: $(SRC) tests/tensor_test.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp src/ops/ops.cpp src/ops/cpuOps.cpp
+	$(CXX) $(CXXFLAGS) -o tests/tensor_test $(SRC) tests/tensor_test.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp src/ops/ops.cpp src/ops/cpuOps.cpp
 
 dense_test: $(SRC) src/layers/dense.cpp tests/dense_test.cpp
 	$(CXX) $(CXXFLAGS) -o tests/dense_test $(SRC) src/layers/dense.cpp tests/dense_test.cpp
@@ -31,8 +31,8 @@ kernel_test: tests/kernel_test.cu src/tensor.cu src/cuda/elementwise.cu src/cuda
 mnist: $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 	$(CXX) $(CXXFLAGS) -o examples/mnist $(SRC) src/layers/dense.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp examples/mnist_train.cpp
 
-mnist_cnn: examples/mnist_cnn.cpp $(SRC) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
-	$(CXX) $(CXXFLAGS) -o mnist_cnn examples/mnist_cnn.cpp $(SRC) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
+mnist_cnn: examples/mnist_cnn.cpp $(SRC) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp src/ops/ops.cpp src/ops/cpuOps.cpp
+	$(CXX) $(CXXFLAGS) -o mnist_cnn examples/mnist_cnn.cpp $(SRC) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp src/ops/ops.cpp src/ops/cpuOps.cpp
 
 mnist_cnn_naive: examples/mnist_cnn.cpp $(SRC) $(CUDA_SRCS) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
 	$(CXX) $(CXXFLAGS) -DCUDA_NAIVE -DUSE_CUDA -o mnist_cnn_naive examples/mnist_cnn.cpp $(SRC) $(CUDA_SRCS) src/layers/dense.cpp src/layers/conv2d.cpp src/layers/maxpool2d.cpp src/layers/flatten.cpp src/activations/relu.cpp src/loss/softmaxCrossEntropy.cpp src/optimizers/adam.cpp src/network.cpp src/dataLoader.cpp examples/mnist.cpp
