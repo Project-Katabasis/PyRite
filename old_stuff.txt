@@ -1,0 +1,50 @@
+    #ifdef CUDA_NAIVE
+        size_t bytes_A = rows * inner * sizeof(float);
+        size_t bytes_B = inner * cols * sizeof(float);
+        size_t bytes_C = rows * cols * sizeof(float);
+
+        float *dev_A, *dev_B, *dev_C;
+        cudaMalloc(&dev_A, bytes_A);
+        cudaMalloc(&dev_B, bytes_B);
+        cudaMalloc(&dev_C, bytes_C);
+
+        cudaMemcpy(dev_A, a.data.data(), bytes_A, cudaMemcpyHostToDevice);
+        cudaMemcpy(dev_B, b.data.data(), bytes_B, cudaMemcpyHostToDevice);
+
+        dim3 threads(16, 16);
+        dim3 blocks((cols + 15) / 16, (rows + 15) / 16);
+        naiveMatMul<<<blocks, threads>>>(dev_C, dev_A, dev_B, rows, cols, inner);
+
+        std::vector<float> result(rows * cols);
+        cudaMemcpy(result.data(), dev_C, bytes_C, cudaMemcpyDeviceToHost);
+
+        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
+        return Tensor(result, {rows, cols});
+    
+    #elif defined(CUDA_TILED)
+        // printf("CUDA matmul: %dx%d @ %dx%d\n", rows, inner, inner, cols);
+        fflush(stdout);
+        #pragma message("Compiling with CUDA_TILED")
+        size_t bytes_A = rows * inner * sizeof(float);
+        size_t bytes_B = inner * cols * sizeof(float);
+        size_t bytes_C = rows * cols * sizeof(float);
+
+        float *dev_A, *dev_B, *dev_C;
+        cudaMalloc(&dev_A, bytes_A);
+        cudaMalloc(&dev_B, bytes_B);
+        cudaMalloc(&dev_C, bytes_C);
+
+        cudaMemcpy(dev_A, a.data.data(), bytes_A, cudaMemcpyHostToDevice);
+        cudaMemcpy(dev_B, b.data.data(), bytes_B, cudaMemcpyHostToDevice);
+
+        dim3 threads(16, 16);
+        dim3 blocks((cols + 15) / 16, (rows + 15) / 16);
+        tiledMatMul<<<blocks, threads>>>(dev_C, dev_A, dev_B, rows, cols, inner);
+
+        std::vector<float> result(rows * cols);
+        cudaMemcpy(result.data(), dev_C, bytes_C, cudaMemcpyDeviceToHost);
+
+        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
+        return Tensor(result, {rows, cols});
+
+    #else

@@ -6,12 +6,28 @@
 #include <stdexcept>
 #include <stdio.h>
 #include <cuda_runtime.h>
+#include "pyrite/memory/allocators/cpuAllocator.h"
+#include <cstring>
+
+static CPUAllocator _cpu_alloc;
+Allocator* Tensor::default_alloc_ = &_cpu_alloc;
 
 Tensor::Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad)
-    : data(data), shape(shape), requires_grad(requires_grad) {}
+    : shape(shape), requires_grad(requires_grad) {
+
+        size_t bytes = data.size() * sizeof(float);
+        storage_ = std::make_shared<Storage>(bytes, Device::CPU, default_alloc_);
+        std::memcpy(storage_->data(), data.data(), bytes);
+
+    }
 
 Tensor::Tensor(std::vector<float> data)
-    : data(data), shape({(int)data.size()}), requires_grad(false) {}
+    : shape({(int)data.size()}), requires_grad(false)
+{
+    size_t bytes = data.size() * sizeof(float);
+    storage_ = std::make_shared<Storage>(bytes, Device::CPU, default_alloc_);
+    std::memcpy(storage_->data(), data.data(), bytes);
+}
 
 Tensor Tensor::random(std::vector<int> shape, float min, float max) {
     int total = 1;
@@ -34,15 +50,17 @@ Tensor Tensor::zeros(std::vector<int> shape) {
 }
 
 void Tensor::print() const {
+    float* ptr = static_cast<float*>(storage_->data());
+    int total = size();
     std::cout << "Tensor(shape=[";
     for (size_t i = 0; i < shape.size(); i++) {
         std::cout << shape[i];
         if (i < shape.size() - 1) std::cout << ", ";
     }
     std::cout << "], data=[";
-    for (size_t i = 0; i < data.size(); i++) {
-        std::cout << data[i];
-        if (i < data.size() - 1) std::cout << ", ";
+    for (size_t i = 0; i < total; i++) {
+        std::cout << ptr[i];
+        if (i < total - 1) std::cout << ", ";
     }
     std::cout << "])" << std::endl;
 }
@@ -57,33 +75,16 @@ Tensor Tensor::matAdd(Tensor a, Tensor b) {
     if (a.shape != b.shape) {
         throw std::invalid_argument("Shape mismatch in matAdd: incompatible dimensions");
     }
-    int size = a.data.size();
-    std::vector<float> result(size);
 
-    #ifdef USE_CUDA
-        
-        size_t bytes = size * sizeof(float);
+    Tensor result = Tensor::zeros(a.shape); // construct empty result Tensor
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* a_ptr = static_cast<float*>(a.storage_->data());
+    float* b_ptr = static_cast<float*>(b.storage_->data());
+    for (int i = 0; i < a.size(); i++) {
+        result_ptr[i] = a_ptr[i] + b_ptr[i];
+    }
 
-        float *dev_A, *dev_B, *dev_C;
-        cudaMalloc(&dev_A, bytes);
-        cudaMalloc(&dev_B, bytes);
-        cudaMalloc(&dev_C, bytes);
-
-        cudaMemcpy(dev_A, a.data.data(), bytes, cudaMemcpyHostToDevice);
-        cudaMemcpy(dev_B, b.data.data(), bytes, cudaMemcpyHostToDevice);
-        
-
-        int threadsPerBlock = 256, blocksPerGrid = (size + 255)/256; 
-        elementwiseAdd<<<blocksPerGrid, threadsPerBlock>>>(dev_C, dev_A, dev_B, size); 
-        cudaMemcpy(result.data(), dev_C, bytes, cudaMemcpyDeviceToHost);
-        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
-
-    #else
-        for (int i = 0; i < size; i++) {
-            result[i] = a.data[i] + b.data[i];
-        }
-    #endif
-    return Tensor(result, a.shape);
+    return result;
 }
 
 Tensor Tensor::matSub(Tensor a, Tensor b) {
@@ -91,11 +92,17 @@ Tensor Tensor::matSub(Tensor a, Tensor b) {
         throw std::invalid_argument("Shape mismatch in matSub: incompatible dimensions");
     }
 
-    std::vector<float> result(a.data.size());
-    for (int i = 0; i < (int)a.data.size(); i++) {
-        result[i] = a.data[i] - b.data[i];
+    //std::vector<float> result(a.data.size());
+    Tensor result = Tensor::zeros(a.shape);   // construct empty result Tensor
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* a_ptr = static_cast<float*>(a.storage_->data());
+    float* b_ptr = static_cast<float*>(b.storage_->data());
+    for (int i = 0; i < (int)a.size(); i++) {
+        // result[i] = a.data[i] - b.data[i];
+        result_ptr[i] = a_ptr[i] - b_ptr[i];
     }
-    return Tensor(result, a.shape);
+    return result;
 }
 
 
@@ -110,182 +117,172 @@ Tensor Tensor::matMul(Tensor a, Tensor b) {
     int inner = a.shape[1];  // must equal b.shape[0]
     int cols = b.shape[1];
 
-    #ifdef CUDA_NAIVE
-        size_t bytes_A = rows * inner * sizeof(float);
-        size_t bytes_B = inner * cols * sizeof(float);
-        size_t bytes_C = rows * cols * sizeof(float);
+    Tensor result = Tensor::zeros({rows, cols});
 
-        float *dev_A, *dev_B, *dev_C;
-        cudaMalloc(&dev_A, bytes_A);
-        cudaMalloc(&dev_B, bytes_B);
-        cudaMalloc(&dev_C, bytes_C);
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* a_ptr = static_cast<float*>(a.storage_->data());
+    float* b_ptr = static_cast<float*>(b.storage_->data());
 
-        cudaMemcpy(dev_A, a.data.data(), bytes_A, cudaMemcpyHostToDevice);
-        cudaMemcpy(dev_B, b.data.data(), bytes_B, cudaMemcpyHostToDevice);
-
-        dim3 threads(16, 16);
-        dim3 blocks((cols + 15) / 16, (rows + 15) / 16);
-        naiveMatMul<<<blocks, threads>>>(dev_C, dev_A, dev_B, rows, cols, inner);
-
-        std::vector<float> result(rows * cols);
-        cudaMemcpy(result.data(), dev_C, bytes_C, cudaMemcpyDeviceToHost);
-
-        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
-        return Tensor(result, {rows, cols});
-    
-    #elif defined(CUDA_TILED)
-        // printf("CUDA matmul: %dx%d @ %dx%d\n", rows, inner, inner, cols);
-        fflush(stdout);
-        #pragma message("Compiling with CUDA_TILED")
-        size_t bytes_A = rows * inner * sizeof(float);
-        size_t bytes_B = inner * cols * sizeof(float);
-        size_t bytes_C = rows * cols * sizeof(float);
-
-        float *dev_A, *dev_B, *dev_C;
-        cudaMalloc(&dev_A, bytes_A);
-        cudaMalloc(&dev_B, bytes_B);
-        cudaMalloc(&dev_C, bytes_C);
-
-        cudaMemcpy(dev_A, a.data.data(), bytes_A, cudaMemcpyHostToDevice);
-        cudaMemcpy(dev_B, b.data.data(), bytes_B, cudaMemcpyHostToDevice);
-
-        dim3 threads(16, 16);
-        dim3 blocks((cols + 15) / 16, (rows + 15) / 16);
-        tiledMatMul<<<blocks, threads>>>(dev_C, dev_A, dev_B, rows, cols, inner);
-
-        std::vector<float> result(rows * cols);
-        cudaMemcpy(result.data(), dev_C, bytes_C, cudaMemcpyDeviceToHost);
-
-        cudaFree(dev_A); cudaFree(dev_B); cudaFree(dev_C);
-        return Tensor(result, {rows, cols});
-
-    #else
-
-        std::vector<float> result(rows * cols, 0.0f);  // flat, initialized to 0
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                for (int k = 0; k < inner; k++) {
-                    result[i * cols + j] += a.data[i * inner + k] * b.data[k * cols + j];
-                }
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            for (int k = 0; k < inner; k++) {
+                result_ptr[i * cols + j] += a_ptr[i * inner + k] * b_ptr[k * cols + j];
             }
         }
-        return Tensor(result, {rows, cols});
-    #endif
+    }
+    return result;
 }
 
 Tensor Tensor::transpose(Tensor tensor){
 
-    std::vector<float> result(tensor.shape[0]*tensor.shape[1], 0.0f);
+    // std::vector<float> result(tensor.shape[0]*tensor.shape[1], 0.0f);
+
+    Tensor result = Tensor::zeros({tensor.shape[1], tensor.shape[0]});
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
 
     for(int i = 0; i < tensor.shape[0]; i ++){
         for(int j = 0; j < tensor.shape[1]; j ++){
-            result[j * tensor.shape[0]+ i] = tensor.data[j + tensor.shape[1] * i];
+            result_ptr[j * tensor.shape[0]+ i] = tensor_ptr[j + tensor.shape[1] * i];
         }
     }
 
-    return Tensor(result, {tensor.shape[1], tensor.shape[0]});
+    return result;
 }
 
 Tensor Tensor::scalarMul(Tensor tensor, float num){
 
-    std::vector<float> result(tensor.size(), 0.0f);
+    Tensor result = Tensor::zeros(tensor.shape);
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
 
-    for(int i = 0; i < tensor.size(); i++){
-        result[i] = num * tensor.data[i];
+    for (int i = 0; i < tensor.size(); i++) {
+        result_ptr[i] = num * tensor_ptr[i];
     }
-
-    return Tensor(result, tensor.shape);
+    return result;
 }
 
 
 Tensor Tensor::scalarAdd(Tensor tensor, float num){
-    std::vector<float> result(tensor.size(), 0.0f);
+
+    Tensor result = Tensor::zeros(tensor.shape);
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
 
     for(int i = 0; i < tensor.size(); i++){
-        result[i] = num + tensor.data[i];
+        result_ptr[i] = num + tensor_ptr[i];
     }
 
-    return Tensor(result, tensor.shape);
+    return result;
 }
 
 Tensor Tensor::elementMul(Tensor a, Tensor b){
     if(a.shape != b.shape){
         throw std::invalid_argument("Shape mismatch in elementMul: Element multiplication must occur between two matrices of equivalent shape");
     }
-    std::vector<float> result(a.size(), 0.0f);
+    
+    Tensor result = Tensor::zeros(a.shape);
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* a_ptr = static_cast<float*>(a.storage_->data());
+    float* b_ptr = static_cast<float*>(b.storage_->data());
+
 
     for(int i = 0; i < a.size(); i++){
-        result[i] = a.data[i] * b.data[i];
+        result_ptr[i] = a_ptr[i] * b_ptr[i];
     }
-    return Tensor(result, a.shape);
+    return result;
 }
 
 Tensor Tensor::elementDiv(Tensor a, Tensor b){
     if(a.shape != b.shape){
         throw std::invalid_argument("Shape mismatch in elementDiv: Element division must occur between two matrices of equivalent shape");
     }
-    std::vector<float> result(a.size(), 0.0f);
+    Tensor result = Tensor::zeros(a.shape);
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* a_ptr = static_cast<float*>(a.storage_->data());
+    float* b_ptr = static_cast<float*>(b.storage_->data());
 
     for(int i = 0; i < a.size(); i++){
-        result[i] = a.data[i] / b.data[i];
+        result_ptr[i] = a_ptr[i] / b_ptr[i];
     }
-    return Tensor(result, a.shape);
+    return result;
 }
 
 Tensor Tensor::sum(Tensor tensor){
     double result = 0;
 
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
+
     for(int i = 0; i < tensor.size(); i++){
-        result += tensor.data[i];
+        result += tensor_ptr[i];
     }
     return Tensor({(float)result}, {1});
 }
 
 Tensor Tensor::funcApply(Tensor tensor, std::function<float(float)> functionApplied){
-    std::vector<float> result(tensor.size(), 0.0f);
+    Tensor result = Tensor::zeros(tensor.shape);
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
     
     for(int i = 0; i < tensor.size(); i++){
-        result[i] = functionApplied(tensor.data[i]);
+        result_ptr[i] = functionApplied(tensor_ptr[i]);
     }
-    return Tensor(result, tensor.shape);
+    return result;
 }
 
 
 Tensor Tensor::colSum(Tensor tensor){
     int cols = tensor.shape[1];
     int rows = tensor.shape[0];
-    std::vector<float> result(rows, 0.0f);
+
+    Tensor result = Tensor::zeros({rows, 1});
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
+    
     for(int i = 0; i < rows; i ++){
         for(int j = 0; j < cols; j++){
-            result[i] += tensor.data[i * cols + j];
+            result_ptr[i] += tensor_ptr[i * cols + j];
         }
     }
-    return Tensor(result, {rows, 1});
+    return result;
 }
 
 Tensor Tensor::broadcast(Tensor tensor, int cols) {
     int rows = tensor.shape[0];
-    std::vector<float> result(rows * cols);
+
+    Tensor result = Tensor::zeros({rows, cols});
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
+
     for(int i = 0; i < rows; i++){
         for(int j = 0; j < cols; j++){
-            result[i * cols + j] = tensor.data[i];
+            result_ptr[i * cols + j] = tensor_ptr[i];
         }
     }
-    return Tensor(result, {rows, cols});
+    return result;
 }
 
 Tensor Tensor::colSelect(Tensor tensor, std::vector<int> indices){
     int rows = tensor.shape[0];
     int n_cols = indices.size();
-    std::vector<float> result(rows * n_cols);
+
+    Tensor result = Tensor::zeros({rows, n_cols});
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* tensor_ptr = static_cast<float*>(tensor.storage_->data());
+
     for(int j = 0; j < n_cols; j++){
         int col = indices[j];
         for(int i = 0; i < rows; i++){
-            result[i * n_cols + j] = tensor.data[i * tensor.shape[1] + col];
+            result_ptr[i * n_cols + j] = tensor_ptr[i * tensor.shape[1] + col];
         }
     }
-    return Tensor(result, {rows, n_cols});
+    return result;
 }
 
 Tensor Tensor::im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW, int stride, int pad){
@@ -294,7 +291,12 @@ Tensor Tensor::im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW
     int outW = (in_W + 2*pad - kW) / stride + 1;
     int col_len = in_C * kH * kW;
     int n_cols = outH * outW * N;
-    std::vector<float> result(col_len * n_cols, 0.0f);
+    
+    Tensor result = Tensor::zeros({col_len, n_cols});
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* input_ptr = static_cast<float*>(input.storage_->data());
+
     for(int n = 0; n < N; n++){
         for(int out_row = 0; out_row < outH; out_row++){
 
@@ -315,7 +317,7 @@ Tensor Tensor::im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW
                             int result_row = out_c * kH * kW + kernel_row * kW + kernel_col;
 
                             if(ih >= 0 && ih < in_H && iw >= 0 && iw < in_W){
-                                result[result_row * n_cols + result_col] = input.data[(out_c * in_H * in_W + ih * in_W + iw) * N + n];
+                                result_ptr[result_row * n_cols + result_col] = input_ptr[(out_c * in_H * in_W + ih * in_W + iw) * N + n];
                             }
                         }
                     }
@@ -323,7 +325,7 @@ Tensor Tensor::im2col(Tensor input, int in_C, int in_H, int in_W, int kH, int kW
             }
         }
     }
-    return Tensor(result, {col_len, n_cols});
+    return result;
 }
 
 
@@ -333,7 +335,13 @@ Tensor Tensor::col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW,
     int outW = (in_W + 2*pad - kW) / stride + 1;
     //int col_len = in_C * kH * kW;
     int n_cols = outH * outW * N;
-    std::vector<float> result(in_C * in_H * in_W * N, 0.0f);
+
+    Tensor result = Tensor::zeros({in_C*in_H*in_W, N});
+
+    float* result_ptr = static_cast<float*>(result.storage_->data());
+    float* cols_ptr = static_cast<float*>(cols.storage_->data());
+
+
     for(int n = 0; n < N; n++){
         for(int out_row = 0; out_row < outH; out_row++){
 
@@ -354,7 +362,7 @@ Tensor Tensor::col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW,
                             int result_row = out_c * kH * kW + kernel_row * kW + kernel_col;
 
                             if(ih >= 0 && ih < in_H && iw >= 0 && iw < in_W){
-                                result[(out_c * in_H * in_W + ih * in_W + iw) * N + n] += cols.data[result_row * n_cols + result_col];
+                                result_ptr[(out_c * in_H * in_W + ih * in_W + iw) * N + n] += cols_ptr[result_row * n_cols + result_col];
                             }
                         }
                     }
@@ -362,5 +370,5 @@ Tensor Tensor::col2im(Tensor cols, int in_C, int in_H, int in_W, int kH, int kW,
             }
         }
     }
-    return Tensor(result, {in_C*in_H*in_W, N});
+    return result;
 }
