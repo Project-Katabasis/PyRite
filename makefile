@@ -4,8 +4,8 @@ CUDA_SRCS = src/cuda/matmul.cu src/cuda/elementwise.cu
 
 SRC = src/tensor.cu
 
-tensor_test: $(SRC) tests/tensor_test.cpp
-	$(CXX) $(CXXFLAGS) -o tests/tensor_test $(SRC) tests/tensor_test.cpp
+tensor_test: $(SRC) tests/tensor_test.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp
+	$(CXX) $(CXXFLAGS) -o tests/tensor_test $(SRC) tests/tensor_test.cpp src/memory/storage.cpp src/memory/allocators/cpuAllocator.cpp
 
 dense_test: $(SRC) src/layers/dense.cpp tests/dense_test.cpp
 	$(CXX) $(CXXFLAGS) -o tests/dense_test $(SRC) src/layers/dense.cpp tests/dense_test.cpp

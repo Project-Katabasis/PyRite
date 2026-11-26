@@ -2,16 +2,20 @@
 #include <vector>
 #include <iostream>
 #include <functional>
+#include "pyrite/memory/storage.h"
+#include "pyrite/memory/allocator.h"
+#include <memory>
 
 class Tensor {
 public:
-    std::vector<float> data;
+    // std::vector<float> data;
     std::vector<int> shape;
     bool requires_grad;
+    float* data_ptr() { return static_cast<float*>(storage_->data()); }
 
     Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad = false);
     Tensor(std::vector<float> data);  // infers 1D shape
-    Tensor() : data({}), shape({0}), requires_grad(false) {}
+    Tensor() : shape({0}), requires_grad(false) {storage_ = std::make_shared<Storage>(0, Device::CPU, default_alloc_);}
 
     static Tensor random(std::vector<int> shape, float min = 0.0f, float max = 1.0f);
     static Tensor zeros(std::vector<int> shape);
@@ -38,4 +42,8 @@ public:
                         int kH, int kW, int stride, int pad, int N);
     void print() const;
     int size() const;
+
+    private:
+        std::shared_ptr<Storage> storage_;
+        static Allocator* default_alloc_;
 };
