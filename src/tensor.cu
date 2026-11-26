@@ -1,5 +1,4 @@
 #include "pyrite/tensor.h"
-#include "pyrite/cuda/kernels.cuh"
 #include <random>
 #include <numeric>
 #include <functional>
@@ -7,12 +6,29 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include "pyrite/memory/allocators/cpuAllocator.h"
+#include "pyrite/memory/allocators/cudaAllocator.h"
 #include <cstring>
 #include "pyrite/ops/ops.h"
 #include "pyrite/ops/cpuOps.h"          // funcApply only — not in ops:: dispatch
 
 static CPUAllocator _cpu_alloc;
+static CUDAAllocator _cuda_alloc;
 Allocator* Tensor::default_alloc_ = &_cpu_alloc;
+
+Tensor Tensor::to(Device device) const {
+    if (storage_->device() == device) return *this;
+    size_t bytes = size() * sizeof(float);
+    Allocator* alloc = (device == Device::CUDA) ? (Allocator*)&_cuda_alloc : (Allocator*)&_cpu_alloc;
+    Tensor result;
+    result.shape = shape;
+    result.requires_grad = requires_grad;
+    result.storage_ = std::make_shared<Storage>(bytes, device, alloc);
+    if (device == Device::CUDA)
+        cudaMemcpy(result.storage_->data(), data_ptr(), bytes, cudaMemcpyHostToDevice);
+    else
+        cudaMemcpy(result.storage_->data(), data_ptr(), bytes, cudaMemcpyDeviceToHost);
+    return result;
+}
 
 Tensor::Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad)
     : shape(shape), requires_grad(requires_grad) {
@@ -258,5 +274,11 @@ Tensor Tensor::reorder(const Tensor& input, const std::vector<int>& dst_to_src, 
 Tensor Tensor::softmax(const Tensor& input) {
     Tensor result = Tensor::zeros(input.shape);
     ops::softmax(result.data_ptr(), input.data_ptr(), input.shape[0], input.shape[1], input.storage_->device());
+    return result;
+}
+
+Tensor Tensor::sqrtElm(Tensor tensor) {
+    Tensor result = Tensor::zeros(tensor.shape);
+    ops::sqrtElm(result.data_ptr(), tensor.data_ptr(), tensor.size(), tensor.storage_->device());
     return result;
 }

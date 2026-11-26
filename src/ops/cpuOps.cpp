@@ -206,4 +206,9 @@ namespace cpu_ops{
         }    
     }
 
+    void sqrtElm(float* out, const float* in, int size) {
+        for (int i = 0; i < size; i++){
+            out[i] = sqrtf(in[i]);
+        }
+    }
 }

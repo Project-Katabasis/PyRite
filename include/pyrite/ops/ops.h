@@ -43,4 +43,6 @@ namespace ops {
     
     void reorder(float* out, const float* in, const int* dst_to_src, int size, Device device);
 
+    void sqrtElm(float* out, const float* in, int size, Device device);
+
 }

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
-
+#include <cmath>
 
 __global__ void elementwiseAdd(float *c, const float *a, const float *b, int size){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -8,11 +8,31 @@ __global__ void elementwiseAdd(float *c, const float *a, const float *b, int siz
         c[i] = a[i] + b[i];
     }
 }
-
-__global__ void scalarMulKernel(float *a, float scalar, int size){
+__global__ void elementwiseDiv(float *c, const float *a, const float *b, int size){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if(i < size){
-        a[i] = a[i] * scalar;
+        c[i] = a[i]/b[i];
+    }
+}
+
+__global__ void elementwiseSub(float *c, const float *a, const float *b, int size){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if(i < size){
+        c[i] = a[i] - b[i];
+    }
+}
+
+__global__ void scalarMulKernel(float *c, const float *a, float scalar, int size){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if(i < size){
+        c[i] = a[i] * scalar;
+    }
+}
+
+__global__ void scalarAddKernel(float *c, const float *a, float scalar, int size){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if(i < size){
+        c[i] = a[i] + scalar;
     }
 }
 
@@ -51,5 +71,12 @@ __global__ void broadcastKernel(float *c, float *a, int outCols, int size){
     if( i < size){
         int input = i / outCols;
         c[i] = a[input];
+    }
+}
+
+__global__ void sqrtKernel(float *c, const float *a, int size){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if(i < size){
+        c[i] = sqrtf(a[i]);
     }
 }

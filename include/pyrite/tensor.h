@@ -9,6 +9,8 @@
 class Tensor {
 public:
     // std::vector<float> data;
+    Tensor to(Device device) const;
+
     std::vector<int> shape;
     bool requires_grad;
     float* data_ptr() { return static_cast<float*>(storage_->data()); }
@@ -54,6 +56,8 @@ public:
 
     // softmax (column-wise)
     static Tensor softmax(const Tensor& input);
+
+    static Tensor sqrtElm(Tensor tensor);
         
 
     void print() const;

@@ -44,4 +44,6 @@ namespace cpu_ops {
     void colSelect(float* out, const float* in, int rows, int in_cols, const int* indices, int n_cols);
 
     void reorder(float* out, const float* in, const int* dst_to_src, int size);
+
+    void sqrtElm(float* out, const float* in, int size);
 }

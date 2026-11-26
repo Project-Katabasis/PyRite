@@ -32,7 +32,9 @@ void Adam::step(std::vector<Layer*>& layers){
             Tensor m_hat = Tensor::scalarMul(momentumVect[idx], 1.0f / (1 - pow(betaOne, t)));
             Tensor v_hat = Tensor::scalarMul(velocityVect[idx], 1.0f / (1 - pow(betaTwo, t)));
 
-            *weight = Tensor::matSub(*weight, Tensor::scalarMul(Tensor::elementDiv(m_hat, Tensor::funcApply(v_hat, std::function<float(float)>([this](float v){ return sqrtf(v) + epsilon; }))), lr));
+            Tensor sqrt_v = Tensor::sqrtElm(v_hat);
+            Tensor denom  = Tensor::scalarAdd(sqrt_v, epsilon);
+            *weight = Tensor::matSub(*weight, Tensor::scalarMul(Tensor::elementDiv(m_hat, denom), lr));
             idx++;
         }
     }

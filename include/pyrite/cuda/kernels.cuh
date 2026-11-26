@@ -3,12 +3,20 @@
 
 //elementwise
 __global__ void elementwiseAdd(float *c, const float *a, const float *b, int size);
-__global__ void scalarMulKernel(float *a, float scalar, int size);
+
+__global__ void elementwiseSub(float *c, const float *a, const float *b, int size);
+__global__ void scalarMulKernel(float *c, const float *a, float scalar, int size);
+__global__ void scalarAddKernel(float *c, const float *a, float scalar, int size);
 __global__ void elementwiseMulKernel(float *c, float *a, float *b, int size);
+__global__ void elementwiseDiv(float *c, const float *a, const float *b, int size);
 __global__ void elementwiseRelu(float *c, float *a, int size);
 __global__ void reluBackwardKernel(float *c, float *grad, float *a, int size);
 __global__ void transposeKernel(float *c, float *a, int rows, int cols, int size);
 __global__ void broadcastKernel(float *c, float *a, int outCols, int size);
+__global__ void sqrtKernel(float *c, const float *a, int size);
+
+
+
 
 //matMul
 __global__ void naiveMatMul(float *C, const float *A, const float *B, int m, int n, int k);
@@ -39,5 +47,8 @@ __global__ void col2imKernel(
     int out_size
 );
 
+__global__ void naiveColSum(float* out, const float* in, int rows, int cols);
+
+__global__ void naiveSoftmax(float* out, const float* in, int rows, int cols);
 
 //reductions
